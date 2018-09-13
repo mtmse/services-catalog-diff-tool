@@ -19,7 +19,7 @@ public class ArgumentParser {
 	public static final String ARGUMENT_SITEKEY_MM3 = "sitekeyMM3";
 	public static final String ARGUMENT_MEDIANUMBERS_PATH = "medianumbers";
 
-	public static final String REGEX_DATAFIELD = "(\\d{3})( |\\d|[a-z]){2}([a-z]|\\d*)";
+	public static final String REGEX_DATAFIELD = "(\\d{3})( |\\d|[a-z]){2}([a-z]|\\d)*";
 	public static final String REGEX_CONTROLFIELD = "\\d{3}";
 	public static final String REGEX_LEADERFIELD = "(leader|LEADER)";
 	public static final Pattern PATTERN_DATAFIELD = Pattern.compile(REGEX_DATAFIELD);

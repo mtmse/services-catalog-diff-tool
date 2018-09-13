@@ -12,7 +12,7 @@ public class ArgumentMapper {
 		for (String field : fieldsToIgnore) {
 
 			if (field.equals("leader") || field.equals("LEADER")) {
-				ignoreFields.setLeaderField(new LeaderFieldType());
+				ignoreFields.setIgnoreLeaderField(true);
 			} else if (field.length() == 3) {
 				ControlFieldType controlField = new ControlFieldType();
 				controlField.setTag(field.substring(0, 3));

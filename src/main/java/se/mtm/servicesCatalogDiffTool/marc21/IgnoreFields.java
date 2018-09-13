@@ -5,16 +5,16 @@ import java.util.List;
 
 public class IgnoreFields {
 
-    private LeaderFieldType leaderField;
+    private boolean ignoreLeaderField = false;
     private List<ControlFieldType> controlFieldList;
     private List<DataFieldType> dataFieldList;
 
-    public LeaderFieldType getLeaderField() {
-        return leaderField;
+    public boolean getIgnoreLeaderField() {
+        return ignoreLeaderField;
     }
 
-    public void setLeaderField(LeaderFieldType leaderField) {
-        this.leaderField = leaderField;
+    public void setIgnoreLeaderField(boolean ignoreLeaderField) {
+        this.ignoreLeaderField = ignoreLeaderField;
     }
 
     public List<ControlFieldType> getControlFieldList() {
