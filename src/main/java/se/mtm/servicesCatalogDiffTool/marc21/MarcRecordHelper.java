@@ -138,7 +138,7 @@ public class MarcRecordHelper {
             for (SubfieldatafieldType sfMM3 :  dfMM3.getSubfield()) {
                 if (subFieldMM2.getCode().equals(sfMM3.getCode())) {
                     String valueMM3 = sfMM3.getValue();
-                    if (valueMM2.equals(valueMM3)) {
+                    if (valueMM3.contains(valueMM2)) {
                         foundValue = true;
                         if (!dataFieldsCounted.contains(dfMM3)) {
                             dataFieldsCounted.add(dfMM3);

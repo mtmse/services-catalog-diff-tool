@@ -50,8 +50,8 @@ public class App {
         }
 
         // Filter out records that should be ignored
-        recordsMM2 = filterDataFields(recordsMM2, fieldsToIgnore);
-        recordsMM3 = filterDataFields(recordsMM3, fieldsToIgnore);
+        recordsMM2 = filterRecordFields(recordsMM2, fieldsToIgnore);
+        recordsMM3 = filterRecordFields(recordsMM3, fieldsToIgnore);
 
         // Compare
         Map<String, String> diffs = new HashMap<>();
@@ -72,7 +72,7 @@ public class App {
         }
     }
 
-    private Map<String, RecordType> filterDataFields(Map<String, RecordType> mmRecords, IgnoreFields fieldsToIgnore) {
+    private Map<String, RecordType> filterRecordFields(Map<String, RecordType> mmRecords, IgnoreFields fieldsToIgnore) {
         Map<String, RecordType> filteredRecords = new HashMap<>();
 
         for (Map.Entry<String, RecordType> entry : mmRecords.entrySet()) {
@@ -83,63 +83,77 @@ public class App {
             RecordType record = new RecordType();
             filteredRecords.put(entry.getKey(), record);
 
-            if (!fieldsToIgnore.getIgnoreLeaderField()) {
-                record.setLeader(entry.getValue().getLeader());
-            }
-
-            for (ControlFieldType cf : entry.getValue().getControlfield()) {
-                boolean ignore = false;
-                for (ControlFieldType cfIgnore : fieldsToIgnore.getControlFieldList()) {
-                    if (cf.getTag().equals(cfIgnore.getTag())) {
-                        ignore = true;
-                        break;
-                    }
-                }
-                if (!ignore) {
-                    record.getControlfield().add(cf);
-                }
-            }
-
-            for (DataFieldType df : entry.getValue().getDatafield()) {
-                boolean ignore = false;
-                List<SubfieldatafieldType> subfieldsToRemove = new ArrayList<>();
-                for (DataFieldType dfIgnore: fieldsToIgnore.getDataFieldList()) {
-
-                    if (df.getTag().equals(dfIgnore.getTag()) &&
-                             df.getInd1().equals(dfIgnore.getInd1()) &&
-                             df.getInd2().equals(dfIgnore.getInd2())) {
-                        ignore = true;
-
-                         for (SubfieldatafieldType sf : df.getSubfield()) {
-                            for (SubfieldatafieldType sfIgnore : dfIgnore.getSubfield()) {
-
-                                if (sf.getCode().equals(sfIgnore.getCode())) {
-                                    subfieldsToRemove.add(sf);
-                                    break;
-                                }
-
-                            }
-                        }
-
-                        ignore = dfIgnore.getSubfield().isEmpty() && subfieldsToRemove.isEmpty();
-
-                        break;
-                    }
-
-                }
-                if (!subfieldsToRemove.isEmpty()) {
-                    for (SubfieldatafieldType sfToRemove: subfieldsToRemove) {
-                        df.getSubfield().remove(sfToRemove);
-                    }
-                }
-                if (!ignore) {
-                    record.getDatafield().add(df);
-                }
-            }
-
+            filterLeaderField(fieldsToIgnore, entry, record);
+            filterControlFields(fieldsToIgnore, entry, record);
+            filterRecordFields(fieldsToIgnore, entry, record);
         }
 
         return filteredRecords;
+    }
+
+    private void filterLeaderField(IgnoreFields fieldsToIgnore, Map.Entry<String, RecordType> entry, RecordType record) {
+        if (!fieldsToIgnore.getIgnoreLeaderField()) {
+            LeaderFieldType leaderField = entry.getValue().getLeader();
+            String value = leaderField.getValue();
+            if (value != null && value.length() > 5) {
+                leaderField.setValue(value.substring(5, value.length()));
+            }
+            record.setLeader(leaderField);
+        }
+    }
+
+    private void filterControlFields(IgnoreFields fieldsToIgnore, Map.Entry<String, RecordType> entry, RecordType record) {
+        for (ControlFieldType cf : entry.getValue().getControlfield()) {
+            boolean ignore = false;
+            for (ControlFieldType cfIgnore : fieldsToIgnore.getControlFieldList()) {
+                if (cf.getTag().equals(cfIgnore.getTag())) {
+                    ignore = true;
+                    break;
+                }
+            }
+            if (!ignore) {
+                record.getControlfield().add(cf);
+            }
+        }
+    }
+
+    private void filterRecordFields(IgnoreFields fieldsToIgnore, Map.Entry<String, RecordType> entry, RecordType record) {
+        for (DataFieldType df : entry.getValue().getDatafield()) {
+            boolean ignore = false;
+            List<SubfieldatafieldType> subfieldsToRemove = new ArrayList<>();
+            for (DataFieldType dfIgnore: fieldsToIgnore.getDataFieldList()) {
+
+                if (df.getTag().equals(dfIgnore.getTag()) &&
+                         df.getInd1().equals(dfIgnore.getInd1()) &&
+                         df.getInd2().equals(dfIgnore.getInd2())) {
+                    ignore = true;
+
+                     for (SubfieldatafieldType sf : df.getSubfield()) {
+                        for (SubfieldatafieldType sfIgnore : dfIgnore.getSubfield()) {
+
+                            if (sf.getCode().equals(sfIgnore.getCode())) {
+                                subfieldsToRemove.add(sf);
+                                break;
+                            }
+
+                        }
+                    }
+
+                    ignore = dfIgnore.getSubfield().isEmpty() && subfieldsToRemove.isEmpty();
+
+                    break;
+                }
+
+            }
+            if (!subfieldsToRemove.isEmpty()) {
+                for (SubfieldatafieldType sfToRemove: subfieldsToRemove) {
+                    df.getSubfield().remove(sfToRemove);
+                }
+            }
+            if (!ignore) {
+                record.getDatafield().add(df);
+            }
+        }
     }
 
     private RecordType getRecords(WebTarget target, String ids) {
