@@ -85,7 +85,7 @@ public class App {
 
             filterLeaderField(fieldsToIgnore, entry, record);
             filterControlFields(fieldsToIgnore, entry, record);
-            filterRecordFields(fieldsToIgnore, entry, record);
+            filterDataFields(fieldsToIgnore, entry, record);
         }
 
         return filteredRecords;
@@ -117,7 +117,7 @@ public class App {
         }
     }
 
-    private void filterRecordFields(IgnoreFields fieldsToIgnore, Map.Entry<String, RecordType> entry, RecordType record) {
+    private void filterDataFields(IgnoreFields fieldsToIgnore, Map.Entry<String, RecordType> entry, RecordType record) {
         for (DataFieldType df : entry.getValue().getDatafield()) {
             boolean ignore = false;
             List<SubfieldatafieldType> subfieldsToRemove = new ArrayList<>();
