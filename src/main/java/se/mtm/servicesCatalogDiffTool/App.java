@@ -49,7 +49,7 @@ public class App {
             recordsMM3.put(mediaNumber, getRecords(servicesMM3, mediaNumber));
         }
 
-        // Filter out records that should be ignored
+        // Filter out fields that should be ignored
         recordsMM2 = filterRecordFields(recordsMM2, fieldsToIgnore);
         recordsMM3 = filterRecordFields(recordsMM3, fieldsToIgnore);
 
