@@ -16,7 +16,7 @@ public class MarcRecordHelper {
 
         compareLeaderField(expected, actual, diffsInRecord);
         compareControlFields(expected, actual, diffsInRecord, mediaNumber);
-        compareDataFields(expected, actual, diffsInRecord);
+        compareDataFields(expected, actual, diffsInRecord, mediaNumber);
 
         return diffsInRecord.toString();
     }
@@ -85,7 +85,7 @@ public class MarcRecordHelper {
 
     }
 
-    private static void compareDataFields(RecordType expected, RecordType actual, StringBuilder diffsInRecord) {
+    private static void compareDataFields(RecordType expected, RecordType actual, StringBuilder diffsInRecord, String mediaNumber) {
 
         List<DataFieldType> dataFieldMM2List = expected.getDatafield();
         List<DataFieldType> dataFieldMM3List = actual.getDatafield();
@@ -107,20 +107,49 @@ public class MarcRecordHelper {
 
                 // Get all MM2 and MM3 data fields with the sam tag, ind1 and ind2
                 List<DataFieldType> dataFieldsMatchedMM2 = findDataFields(dataFieldMM2List, tag, ind1, ind2);
+
+                if (tag.equals("084") && ind1.equals(" ") && ind2.equals("1")) {
+                    ind2 = " ";
+                }
                 List<DataFieldType> dataFieldsMatchedMM3 = findDataFields(dataFieldMM3List, tag, ind1, ind2);
 
 
 
                 if (dataFieldsMatchedMM3.isEmpty()) {
-                    if ( (tag.equals("295") && ind1.equals("0") && ind2.equals("0"))
-                            && existSubfield(dataFieldsMatchedMM2, "n")) {
-                        continue;
+                    if ( (tag.equals("295") && ind1.equals("0") && ind2.equals("0") &&
+                            existsSubfield(dataFieldsMatchedMM2, "n")) ) {
+                       continue;
                     }
+
                     appendMessage(diffsInRecord,"Expected " + dataFieldsMatchedMM2.size() + " '" + tag + ind1 + ind2 + "' fields to exist in MM3");
-                } else if ( tag.equals("029") && ind1.equals("6") && ind2.equals("1") && isPhysicalMultiVolumeBraille(expected, actual) ) {
                     fieldsCompared.addAll(dataFieldsMatchedMM2);
                     continue;
+                } else if ( tag.equals("029") && ind1.equals("6") && ind2.equals("1") && isPhysicalMultiVolumeBraille(actual, mediaNumber) ) {
+                    fieldsCompared.addAll(dataFieldsMatchedMM2);
+                    continue;
+                } else if ( tag.equals("260") && ind1.equals(" ") && ind2.equals(" ") ) {
+                    String subFieldValue = getSubFieldValue(dataFieldsMatchedMM2,"b");
+                    if (subFieldValue != null &&
+                            (subFieldValue.startsWith("SIH") ||
+                            subFieldValue.startsWith("SIT") ||
+                            subFieldValue.startsWith("Specialpedagogiska") ||
+                            subFieldValue.startsWith("SPSM"))) {
+
+                        List<SubfieldatafieldType> subFieldList = new ArrayList<>();
+                        subFieldList.add(getSubField(dataFieldsMatchedMM2, "a"));
+                        subFieldList.add(getSubField(dataFieldsMatchedMM2, "b"));
+                        subFieldList.add(getSubField(dataFieldsMatchedMM3, "a"));
+                        subFieldList.add(getSubField(dataFieldsMatchedMM3, "b"));
+                        // set 260  $ab to null in order to ignore when comparing
+                        for (SubfieldatafieldType sf : subFieldList) {
+                            if (sf != null) {
+                                sf.setValue("");
+                            }
+                        }
+                    }
+
                 }
+
                 compareMatchingDataFields(diffsInRecord, dataFieldsMatchedMM2, dataFieldsMatchedMM3, expected, actual);
 
                 fieldsCompared.addAll(dataFieldsMatchedMM2);
@@ -129,10 +158,34 @@ public class MarcRecordHelper {
 
     }
 
-    private static boolean existSubfield(List<DataFieldType> dataFieldsMatchedMM2, String subFieldCode) {
+    private static boolean existsSubfield(List<DataFieldType> dataFieldsMatchedMM2, String subFieldCode) {
         List<SubfieldatafieldType> subFields = findSubFields(dataFieldsMatchedMM2, subFieldCode);
-
         return !subFields.isEmpty();
+    }
+
+        /**
+         * Gets the first value of a SubField matching specified code (or null no matching SubField could be found)
+         */
+    public static String getSubFieldValue(List<DataFieldType> dataFields, String code) {
+        for (DataFieldType dataField : dataFields) {
+            for (SubfieldatafieldType subField : dataField.getSubfield()) {
+                if (code.equals(subField.getCode())) {
+                    return subField.getValue();
+                }
+            }
+        }
+        return null;
+    }
+
+    public static SubfieldatafieldType getSubField(List<DataFieldType> dataFields, String code) {
+        for (DataFieldType dataField : dataFields) {
+            for (SubfieldatafieldType subField : dataField.getSubfield()) {
+                if (code.equals(subField.getCode())) {
+                    return subField;
+                }
+            }
+        }
+        return null;
     }
 
 
@@ -188,26 +241,13 @@ public class MarcRecordHelper {
 
 
 
-    private static boolean isPhysicalMultiVolumeBraille(RecordType mm2Record, RecordType mm3Record) {
-
-        String controlFieldMM2 = findControlField("001", mm2Record.getControlfield()).getValue();
-        String controlFieldMM3 = findControlField("001", mm3Record.getControlfield()).getValue();
-
-        return !controlFieldMM2.equals(controlFieldMM3) && isBrailleBookType(mm2Record);
+    private static boolean isPhysicalMultiVolumeBraille(RecordType mm3Record, String mediaNumber) {
+        String subFieldValue = getSubFieldValue(findDataFields(mm3Record.getDatafield(),"245", "0", "0"), "n");
+        return (isBrailleBookType(mediaNumber) && subFieldValue != null && subFieldValue.startsWith("Vol") );
     }
 
-    private static boolean isBrailleBookType(RecordType record) {
-        List<DataFieldType> dataFields = findDataFields(record.getDatafield(), "029", "3", "0");
-        List<SubfieldatafieldType> subFields = findSubFields(dataFields, "a");
-
-        for (SubfieldatafieldType sf : subFields) {
-            if (sf.getValue().charAt(0) == 'P'
-                    && sf.getValue().length() == 6) {
-                // Found media number
-                return true;
-            }
-        }
-        return false;
+    private static boolean isBrailleBookType(String mediaNumber) {
+        return mediaNumber.charAt(0) == 'P' ? true : false;
     }
 
     private static ControlFieldType findControlField(String tag, List<ControlFieldType> controlFields) {
